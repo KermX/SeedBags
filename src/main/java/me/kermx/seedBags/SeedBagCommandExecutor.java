@@ -3,7 +3,11 @@ package me.kermx.seedBags;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.command.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -19,24 +23,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Command executor and tab completer for the /getseedbag command.
+ */
 public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
     private final Plugin plugin;
-    private final List<Material> plantableSeeds = Arrays.asList(
-            Material.WHEAT_SEEDS,
-            Material.BEETROOT_SEEDS,
-            Material.CARROT,
-            Material.POTATO,
-            Material.NETHER_WART,
-            Material.MELON_SEEDS,
-            Material.PUMPKIN_SEEDS
-    );
+    private final List<Material> plantableSeeds = Arrays.asList(Material.WHEAT_SEEDS, Material.BEETROOT_SEEDS, Material.CARROT, Material.POTATO, Material.NETHER_WART, Material.MELON_SEEDS, Material.PUMPKIN_SEEDS);
     private final Map<String, Material> seedSynonyms = new HashMap<>();
 
+    /**
+     * Constructor for SeedBagCommandExecutor.
+     *
+     * @param plugin The main plugin instance.
+     */
     public SeedBagCommandExecutor(Plugin plugin) {
         this.plugin = plugin;
         initializeSeedSynonyms();
     }
 
+    /**
+     * Initialize seed type synonyms to allow for more flexible input.
+     */
     private void initializeSeedSynonyms() {
         seedSynonyms.put("wheat", Material.WHEAT_SEEDS);
         seedSynonyms.put("beetroot", Material.BEETROOT_SEEDS);
@@ -47,6 +54,15 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
         seedSynonyms.put("pumpkin", Material.PUMPKIN_SEEDS);
     }
 
+    /**
+     * Handle the /getseedbag command to give the player a seed bag.
+     *
+     * @param sender  The sender of the command.
+     * @param command The command being executed.
+     * @param label   The alias of the command used.
+     * @param args    The arguments passed to the command.
+     * @return True if the command was successful, false otherwise.
+     */
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (sender instanceof ConsoleCommandSender) {
@@ -80,10 +96,22 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    /**
+     * Check if the given material is a plantable seed.
+     *
+     * @param material The material to check.
+     * @return True if the material is a plantable seed, false otherwise.
+     */
     private boolean isPlantableItem(Material material) {
         return plantableSeeds.contains(material);
     }
 
+    /**
+     * Create a seed bag item with the specified seed material.
+     *
+     * @param seedMaterial The seed material for the seed bag.
+     * @return The created seed bag item.
+     */
     private ItemStack createSeedBag(Material seedMaterial) {
         ItemStack seedBag = new ItemStack(Material.PAPER);
         ItemMeta meta = seedBag.getItemMeta();
@@ -102,6 +130,12 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
         return seedBag;
     }
 
+    /**
+     * Get the display name for the seed bag.
+     *
+     * @param meta The ItemMeta of the seed bag.
+     * @return The display name for the seed bag.
+     */
     private String getSeedBagDisplayName(ItemMeta meta) {
         PersistentDataContainer data = meta.getPersistentDataContainer();
         NamespacedKey seedTypeKey = new NamespacedKey(plugin, "seed_type");
@@ -119,6 +153,15 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
         return seedName + " Seed Bag [" + count + "]";
     }
 
+    /**
+     * Handle tab completion for the /getseedbag command to provide seed type suggestions.
+     *
+     * @param sender  The sender of the command.
+     * @param command The command being executed.
+     * @param label   The alias of the command used.
+     * @param args    The arguments passed to the command.
+     * @return A list of suggested seed types based on the input.
+     */
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
