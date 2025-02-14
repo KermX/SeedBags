@@ -1,46 +1,65 @@
 package me.kermx.seedBags;
 
-import org.bukkit.NamespacedKey;
+import dev.rosewood.rosestacker.api.RoseStackerAPI;
+import dev.rosewood.rosestacker.stack.StackedItem;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
 public class SeedBagListener implements Listener {
     private final Plugin plugin;
+    private final RoseStackerAPI rsAPI;
 
-    public SeedBagListener(Plugin plugin) {
+    public SeedBagListener(Plugin plugin, RoseStackerAPI rsAPI) {
         this.plugin = plugin;
+        this.rsAPI = rsAPI;
     }
 
     // Handle item pickup events
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onItemPickup(EntityPickupItemEvent event) {
-        if (!(event.getEntity() instanceof Player)) {
+        if (!(event.getEntity() instanceof Player player)) {
             return;
         }
-        Player player = (Player) event.getEntity();
-        ItemStack pickedUpItem = event.getItem().getItemStack();
-        Material material = pickedUpItem.getType();
 
-        if (isPlantableItem(material)) {
-            // Check for corresponding seed bag
+        Item item = event.getItem();
+        ItemStack itemStack = item.getItemStack();
+        Material material = itemStack.getType();
+
+        if (rsAPI != null) {
             ItemStack seedBag = getSeedBagFromInventory(player.getInventory(), material);
+
             if (seedBag != null) {
-                event.setCancelled(true);
-                event.getItem().remove();
-                addSeedsToBag(seedBag, pickedUpItem.getAmount());
+                if (!rsAPI.isItemStacked(item)) {
+                    if (isPlantableItem(material)) {
+                        event.setCancelled(true);
+                        event.getItem().remove();
+                        addSeedsToBag(seedBag, itemStack.getAmount());
+                    }
+                } else {
+                    StackedItem stackedItem = rsAPI.getStackedItem(item);
+                    if (stackedItem != null) {
+                        event.setCancelled(true);
+                        event.getItem().remove();
+                        rsAPI.removeItemStack(stackedItem);
+                        addSeedsToBag(seedBag, stackedItem.getStackSize());
+                    }
+                }
             }
         }
     }
@@ -67,18 +86,10 @@ public class SeedBagListener implements Listener {
     }
 
     private boolean isPlantableItem(Material material) {
-        switch (material) {
-            case WHEAT_SEEDS:
-            case BEETROOT_SEEDS:
-            case CARROT:
-            case POTATO:
-            case NETHER_WART:
-            case MELON_SEEDS:
-            case PUMPKIN_SEEDS:
-                return true;
-            default:
-                return false;
-        }
+        return switch (material) {
+            case WHEAT_SEEDS, BEETROOT_SEEDS, CARROT, POTATO, NETHER_WART, MELON_SEEDS, PUMPKIN_SEEDS -> true;
+            default -> false;
+        };
     }
 
     private ItemStack getSeedBagFromInventory(PlayerInventory inventory, Material seedType) {
@@ -155,7 +166,10 @@ public class SeedBagListener implements Listener {
         }
 
         Material seedMaterial = Material.valueOf(seedTypeString);
-        int radius = 1; // 3x3 area
+        int radius = 2; // 5x5 area
+
+        if (seedTypeString.equals("PUMPKIN_SEEDS") || seedTypeString.equals("MELON_SEEDS")) radius = 0;
+
         int seedsPlanted = 0;
 
         for (int dx = -radius; dx <= radius; dx++) {
@@ -165,10 +179,12 @@ public class SeedBagListener implements Listener {
                     Block blockAbove = block.getRelative(0, 1, 0);
                     if (blockAbove.getType() == Material.AIR) {
                         blockAbove.setType(getCropBlock(seedMaterial));
-                        if (blockAbove.getBlockData() instanceof Ageable) {
-                            Ageable ageable = (Ageable) blockAbove.getBlockData();
+                        if (blockAbove.getBlockData() instanceof Ageable ageable) {
                             ageable.setAge(0);
                             blockAbove.setBlockData(ageable);
+//                             TODO use place block event
+//                            BlockPlaceEvent placeEvent = new BlockPlaceEvent(blockAbove, player);
+//                            Bukkit.getPluginManager().callEvent(placeEvent);
                         }
                         seedsPlanted++;
                         seedCount--;

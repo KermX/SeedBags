@@ -2,6 +2,7 @@ name: SeedBags
 version: '1.0-SNAPSHOT'
 main: me.kermx.seedBags.SeedBags
 api-version: '1.19'
+softdepend: [RoseStacker]
 commands:
   getseedbag:
     description: Gives a seed bag
