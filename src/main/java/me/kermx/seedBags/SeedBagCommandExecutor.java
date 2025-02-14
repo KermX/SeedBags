@@ -1,5 +1,6 @@
 package me.kermx.seedBags;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.*;
@@ -94,7 +95,7 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
         NamespacedKey countKey = new NamespacedKey(plugin, "seed_count");
         data.set(countKey, PersistentDataType.INTEGER, 0);
 
-        meta.setDisplayName(getSeedBagDisplayName(meta));
+        meta.displayName(Component.text(getSeedBagDisplayName(meta)));
         meta.setMaxStackSize(1);
         seedBag.setItemMeta(meta);
 

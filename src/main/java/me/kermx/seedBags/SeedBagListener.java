@@ -2,6 +2,7 @@ package me.kermx.seedBags;
 
 import dev.rosewood.rosestacker.api.RoseStackerAPI;
 import dev.rosewood.rosestacker.stack.StackedItem;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
@@ -126,7 +127,7 @@ public class SeedBagListener implements Listener {
         currentCount += amount;
         data.set(countKey, PersistentDataType.INTEGER, currentCount);
         seedBag.setItemMeta(meta);
-        meta.setDisplayName(getSeedBagDisplayName(seedBag));
+        meta.displayName(Component.text(getSeedBagDisplayName(seedBag)));
         seedBag.setItemMeta(meta);
     }
 
@@ -201,7 +202,7 @@ public class SeedBagListener implements Listener {
 
         if (seedsPlanted > 0) {
             data.set(countKey, PersistentDataType.INTEGER, seedCount);
-            meta.setDisplayName(getSeedBagDisplayName(seedBag));
+            meta.displayName(Component.text(getSeedBagDisplayName(seedBag)));
             seedBag.setItemMeta(meta);
         } else {
             player.sendMessage("No suitable place to plant seeds!");
