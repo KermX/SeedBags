@@ -24,6 +24,9 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Listener class for handling item pickup and player interaction events
  * related to seed bags in the Minecraft plugin.
@@ -173,6 +176,12 @@ public class SeedBagListener implements Listener {
         currentSeedCount += amount;
         data.set(seedCountKey, PersistentDataType.INTEGER, currentSeedCount);
         meta.displayName(Component.text(getSeedBagDisplayName(seedBag)));
+
+        // Update the lore
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Seeds: " + currentSeedCount));
+        meta.lore(lore);
+
         seedBag.setItemMeta(meta);
     }
 
@@ -186,9 +195,7 @@ public class SeedBagListener implements Listener {
         ItemMeta meta = seedBag.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
         NamespacedKey seedTypeKey = new NamespacedKey(plugin, "seed_type");
-        NamespacedKey seedCountKey = new NamespacedKey(plugin, "seed_count");
         String seedType = data.get(seedTypeKey, PersistentDataType.STRING);
-        int seedCount = data.getOrDefault(seedCountKey, PersistentDataType.INTEGER, 0);
 
         if (seedType == null) {
             seedType = "Unknown Seed";
@@ -197,7 +204,7 @@ public class SeedBagListener implements Listener {
         String seedName = seedType.replace('_', ' ').toLowerCase();
         seedName = Character.toUpperCase(seedName.charAt(0)) + seedName.substring(1);
 
-        return seedName + " Seed Bag [" + seedCount + "]";
+        return seedName + " Seed Bag";
     }
 
     /**
@@ -268,6 +275,12 @@ public class SeedBagListener implements Listener {
         if (seedsPlanted > 0) {
             data.set(seedCountKey, PersistentDataType.INTEGER, seedCount);
             meta.displayName(Component.text(getSeedBagDisplayName(seedBag)));
+
+            // Update the lore
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.text("Seeds: " + seedCount));
+            meta.lore(lore);
+
             seedBag.setItemMeta(meta);
         } else {
             player.sendMessage("No suitable place to plant seeds!");
