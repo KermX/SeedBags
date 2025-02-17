@@ -17,6 +17,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -243,7 +244,7 @@ public class SeedBagListener implements Listener {
                             blockAbove.setBlockData(ageable);
                         }
                         BlockPlaceEvent placeEvent = new BlockPlaceEvent(
-                                blockAbove, block.getState(), block, seedBag, player, true, null
+                                blockAbove, block.getState(), block, seedBag, player, true, EquipmentSlot.HAND
                         );
                         Bukkit.getPluginManager().callEvent(placeEvent);
                         if (!placeEvent.isCancelled()) {
