@@ -19,6 +19,7 @@ public final class SeedBags extends JavaPlugin {
     public static NamespacedKey SEED_TYPE_KEY;
     public static NamespacedKey SEED_COUNT_KEY;
 
+    public static final int MAX_SEEDS = 128000;
 
     /**
      * Called when the plugin is enabled.

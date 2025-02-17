@@ -143,29 +143,6 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Get the display name for the seed bag.
-     *
-     * @param meta The ItemMeta of the seed bag.
-     * @return The display name for the seed bag.
-     */
-    private String getSeedBagDisplayName(ItemMeta meta) {
-        PersistentDataContainer data = meta.getPersistentDataContainer();
-        NamespacedKey seedTypeKey = new NamespacedKey(plugin, "seed_type");
-        NamespacedKey countKey = new NamespacedKey(plugin, "seed_count");
-        String seedType = data.get(seedTypeKey, PersistentDataType.STRING);
-        int count = data.getOrDefault(countKey, PersistentDataType.INTEGER, 0);
-
-        if (seedType == null) {
-            seedType = "Unknown Seed";
-        }
-
-        String seedName = seedType.replace('_', ' ').toLowerCase();
-        seedName = Character.toUpperCase(seedName.charAt(0)) + seedName.substring(1);
-
-        return seedName + " Seed Bag [" + count + "]";
-    }
-
-    /**
      * Handle tab completion for the /getseedbag command to provide seed type suggestions.
      *
      * @param sender  The sender of the command.

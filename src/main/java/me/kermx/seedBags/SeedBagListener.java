@@ -26,6 +26,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Listener class for handling item pickup and player interaction events
@@ -65,19 +66,29 @@ public class SeedBagListener implements Listener {
             ItemStack seedBag = getSeedBagFromInventory(player.getInventory(), material);
 
             if (seedBag != null) {
+                int amount = 0;
                 if (!rsAPI.isItemStacked(item)) {
                     if (isPlantableSeed(material)) {
                         event.setCancelled(true);
+                        amount = itemStack.getAmount();
                         item.remove();
-                        addSeedsToBag(seedBag, itemStack.getAmount());
                     }
                 } else {
                     StackedItem stackedItem = rsAPI.getStackedItem(item);
                     if (stackedItem != null) {
                         event.setCancelled(true);
+                        amount = stackedItem.getStackSize();
                         item.remove();
                         rsAPI.removeItemStack(stackedItem);
-                        addSeedsToBag(seedBag, stackedItem.getStackSize());
+                    }
+                }
+                if (amount > 0) {
+                    int leftover = addSeedsToBags(player.getInventory(), amount, material);
+                    if (leftover > 0) {
+                        Map<Integer, ItemStack> remaining = player.getInventory().addItem(new ItemStack(material, leftover));
+                        for (ItemStack rem : remaining.values()) {
+                            player.getWorld().dropItemNaturally(player.getLocation(), rem);
+                        }
                     }
                 }
             }
@@ -139,22 +150,51 @@ public class SeedBagListener implements Listener {
     }
 
     /**
-     * Add the specified amount of seeds to the seed bag.
+     * Iterates over all seed bags of the specified seed type in the inventory and attempts to add seeds.
      *
-     * @param seedBag The seed bag to add seeds to.
-     * @param amount  The amount of seeds to add.
+     * @param inventory    The player's inventory.
+     * @param amount       The number of seeds to add.
+     * @param seedMaterial The seed type.
+     * @return The number of seeds that could not be added.
      */
-    private void addSeedsToBag(ItemStack seedBag, int amount) {
-        ItemMeta meta = seedBag.getItemMeta();
-        if (meta == null) {
-            return;
+    private int addSeedsToBags(PlayerInventory inventory, int amount, Material seedMaterial) {
+        int leftover = amount;
+        for (ItemStack bag : inventory.getContents()) {
+            if (bag != null && SeedBagUtil.isSeedBag(bag, plugin, seedMaterial)) {
+                leftover = addSeedsToBag(bag, leftover, seedMaterial);
+                if (leftover <= 0) {
+                    break;
+                }
+            }
         }
+        return leftover;
+    }
+
+    /**
+     * Attempts to add a given number of seeds to a single seed bag.
+     *
+     * @param seedBag      The seed bag ItemStack.
+     * @param amount       The number of seeds to add.
+     * @param seedMaterial The material type of the seeds.
+     * @return The number of seeds that could not be added.
+     */
+    private int addSeedsToBag(ItemStack seedBag, int amount, Material seedMaterial) {
+        ItemMeta meta = seedBag.getItemMeta();
+        if (meta == null) return amount;
         int currentSeedCount = meta.getPersistentDataContainer()
                 .getOrDefault(SeedBags.SEED_COUNT_KEY, PersistentDataType.INTEGER, 0);
-        currentSeedCount += amount;
-        meta.getPersistentDataContainer().set(SeedBags.SEED_COUNT_KEY, PersistentDataType.INTEGER, currentSeedCount);
+        int maxCapacity = SeedBags.MAX_SEEDS;
+        int freeSpace = maxCapacity - currentSeedCount;
+        if (freeSpace <= 0) {
+            // Bag is already full; none can be added.
+            return amount;
+        }
+        int seedsToAdd = Math.min(amount, freeSpace);
+        int newCount = currentSeedCount + seedsToAdd;
+        meta.getPersistentDataContainer().set(SeedBags.SEED_COUNT_KEY, PersistentDataType.INTEGER, newCount);
         seedBag.setItemMeta(meta);
         SeedBagUtil.updateSeedBagMeta(seedBag);
+        return amount - seedsToAdd; // leftover seeds that could not be added.
     }
 
     /**

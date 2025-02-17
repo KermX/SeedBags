@@ -1,6 +1,7 @@
 package me.kermx.seedBags;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -12,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SeedBagUtil {
+
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
     public static void updateSeedBagMeta(ItemStack seedBag) {
         if (seedBag == null) {
@@ -29,15 +32,16 @@ public class SeedBagUtil {
         if (seedType == null) {
             seedType = "Unknown Seed";
         } else {
-            seedType = seedType.replace('_', ' ').toLowerCase();
-            seedType = Character.toUpperCase(seedType.charAt(0)) + seedType.substring(1);
+            seedType = normalizeMaterialName(seedType);
         }
 
-        String displayName = seedType + " Seed Bag [" + seedCount + "]";
-        meta.displayName(Component.text(displayName));
+        String displayName = "<white><italic:false>Seed Bag - " + seedType + " (" + seedCount + ")";
+        meta.displayName(MINI_MESSAGE.deserialize(displayName));
 
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("Seeds: " + seedCount));
+        lore.add(Component.text(" "));
+        lore.add(MINI_MESSAGE.deserialize("<gray><italic:false>" + seedCount + "/128,000 "));
+        lore.add(MINI_MESSAGE.deserialize("<gray><italic:false>Plants crops in a 5x5 area."));
         meta.lore(lore);
 
         seedBag.setItemMeta(meta);
@@ -56,5 +60,15 @@ public class SeedBagUtil {
         }
         String storedSeedType = meta.getPersistentDataContainer().get(SeedBags.SEED_TYPE_KEY, PersistentDataType.STRING);
         return seedType == null || storedSeedType.equals(seedType.toString());
+    }
+
+    public static String normalizeMaterialName(String materialName) {
+        // Replace underscores with spaces and capitalize each word
+        String[] words = materialName.toLowerCase().split("_");
+        StringBuilder normalized = new StringBuilder();
+        for (String word : words) {
+            normalized.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1)).append(" ");
+        }
+        return normalized.toString().trim();
     }
 }
