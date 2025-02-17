@@ -96,7 +96,7 @@ public class SeedBagListener implements Listener {
         }
 
         ItemStack itemInHand = event.getItem();
-        if (itemInHand == null || !isSeedBag(itemInHand, null)) {
+        if (itemInHand == null || !SeedBagUtil.isSeedBag(itemInHand, plugin, null)) {
             return;
         }
 
@@ -131,35 +131,11 @@ public class SeedBagListener implements Listener {
      */
     private ItemStack getSeedBagFromInventory(PlayerInventory inventory, Material seedType) {
         for (ItemStack item : inventory.getContents()) {
-            if (item != null && isSeedBag(item, seedType)) {
+            if (item != null && SeedBagUtil.isSeedBag(item, plugin, seedType)) {
                 return item;
             }
         }
         return null;
-    }
-
-    /**
-     * Check if the given item is a seed bag that matches the given seed type.
-     *
-     * @param item     The item to check.
-     * @param seedType The seed type to match (can be null).
-     * @return True if the item is a matching seed bag, false otherwise.
-     */
-    private boolean isSeedBag(ItemStack item, Material seedType) {
-        if (item.getType() != Material.PAPER) {
-            return false;
-        }
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) {
-            return false;
-        }
-        PersistentDataContainer data = meta.getPersistentDataContainer();
-        NamespacedKey seedTypeKey = new NamespacedKey(plugin, "seed_type");
-        if (!data.has(seedTypeKey, PersistentDataType.STRING)) {
-            return false;
-        }
-        String storedSeedType = data.get(seedTypeKey, PersistentDataType.STRING);
-        return seedType == null || storedSeedType.equals(seedType.toString());
     }
 
     /**
@@ -170,41 +146,15 @@ public class SeedBagListener implements Listener {
      */
     private void addSeedsToBag(ItemStack seedBag, int amount) {
         ItemMeta meta = seedBag.getItemMeta();
-        PersistentDataContainer data = meta.getPersistentDataContainer();
-        NamespacedKey seedCountKey = new NamespacedKey(plugin, "seed_count");
-        int currentSeedCount = data.getOrDefault(seedCountKey, PersistentDataType.INTEGER, 0);
-        currentSeedCount += amount;
-        data.set(seedCountKey, PersistentDataType.INTEGER, currentSeedCount);
-        meta.displayName(Component.text(getSeedBagDisplayName(seedBag)));
-
-        // Update the lore
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("Seeds: " + currentSeedCount));
-        meta.lore(lore);
-
-        seedBag.setItemMeta(meta);
-    }
-
-    /**
-     * Get the display name for the seed bag.
-     *
-     * @param seedBag The seed bag to get the display name for.
-     * @return The display name for the seed bag.
-     */
-    private String getSeedBagDisplayName(ItemStack seedBag) {
-        ItemMeta meta = seedBag.getItemMeta();
-        PersistentDataContainer data = meta.getPersistentDataContainer();
-        NamespacedKey seedTypeKey = new NamespacedKey(plugin, "seed_type");
-        String seedType = data.get(seedTypeKey, PersistentDataType.STRING);
-
-        if (seedType == null) {
-            seedType = "Unknown Seed";
+        if (meta == null) {
+            return;
         }
-
-        String seedName = seedType.replace('_', ' ').toLowerCase();
-        seedName = Character.toUpperCase(seedName.charAt(0)) + seedName.substring(1);
-
-        return seedName + " Seed Bag";
+        int currentSeedCount = meta.getPersistentDataContainer()
+                .getOrDefault(SeedBags.SEED_COUNT_KEY, PersistentDataType.INTEGER, 0);
+        currentSeedCount += amount;
+        meta.getPersistentDataContainer().set(SeedBags.SEED_COUNT_KEY, PersistentDataType.INTEGER, currentSeedCount);
+        seedBag.setItemMeta(meta);
+        SeedBagUtil.updateSeedBagMeta(seedBag);
     }
 
     /**
@@ -226,11 +176,10 @@ public class SeedBagListener implements Listener {
      */
     private void plantSeeds(Player player, Block clickedBlock, ItemStack seedBag) {
         ItemMeta meta = seedBag.getItemMeta();
-        PersistentDataContainer data = meta.getPersistentDataContainer();
-        NamespacedKey seedTypeKey = new NamespacedKey(plugin, "seed_type");
-        NamespacedKey seedCountKey = new NamespacedKey(plugin, "seed_count");
-        String seedTypeString = data.get(seedTypeKey, PersistentDataType.STRING);
-        int seedCount = data.getOrDefault(seedCountKey, PersistentDataType.INTEGER, 0);
+        if (meta == null) return;
+        String seedTypeString = meta.getPersistentDataContainer().get(SeedBags.SEED_TYPE_KEY, PersistentDataType.STRING);
+        int seedCount = meta.getPersistentDataContainer()
+                .getOrDefault(SeedBags.SEED_COUNT_KEY, PersistentDataType.INTEGER, 0);
 
         if (seedCount <= 0) {
             player.sendMessage("Your seed bag is empty!");
@@ -238,10 +187,10 @@ public class SeedBagListener implements Listener {
         }
 
         Material seedMaterial = Material.valueOf(seedTypeString);
-        int radius = seedTypeString.equals("PUMPKIN_SEEDS") || seedTypeString.equals("MELON_SEEDS") ? 0 : 2; // Adjust planting area
-
+        int radius = (seedTypeString.equals("PUMPKIN_SEEDS") || seedTypeString.equals("MELON_SEEDS")) ? 0 : 2;
         int seedsPlanted = 0;
 
+        outer:
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 Block block = clickedBlock.getRelative(dx, 0, dz);
@@ -253,13 +202,15 @@ public class SeedBagListener implements Listener {
                             ageable.setAge(0);
                             blockAbove.setBlockData(ageable);
                         }
-                        BlockPlaceEvent placeEvent = new BlockPlaceEvent(blockAbove, block.getState(), block, seedBag, player, true, org.bukkit.inventory.EquipmentSlot.HAND);
+                        BlockPlaceEvent placeEvent = new BlockPlaceEvent(
+                                blockAbove, block.getState(), block, seedBag, player, true, null
+                        );
                         Bukkit.getPluginManager().callEvent(placeEvent);
                         if (!placeEvent.isCancelled()) {
                             seedsPlanted++;
                             seedCount--;
                             if (seedCount <= 0) {
-                                break;
+                                break outer;
                             }
                         } else {
                             blockAbove.setType(Material.AIR);
@@ -267,21 +218,12 @@ public class SeedBagListener implements Listener {
                     }
                 }
             }
-            if (seedCount <= 0) {
-                break;
-            }
         }
 
         if (seedsPlanted > 0) {
-            data.set(seedCountKey, PersistentDataType.INTEGER, seedCount);
-            meta.displayName(Component.text(getSeedBagDisplayName(seedBag)));
-
-            // Update the lore
-            List<Component> lore = new ArrayList<>();
-            lore.add(Component.text("Seeds: " + seedCount));
-            meta.lore(lore);
-
+            meta.getPersistentDataContainer().set(SeedBags.SEED_COUNT_KEY, PersistentDataType.INTEGER, seedCount);
             seedBag.setItemMeta(meta);
+            SeedBagUtil.updateSeedBagMeta(seedBag);
         } else {
             player.sendMessage("No suitable place to plant seeds!");
         }

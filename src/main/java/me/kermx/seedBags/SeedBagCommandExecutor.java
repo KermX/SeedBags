@@ -28,7 +28,11 @@ import java.util.Map;
  */
 public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
     private final Plugin plugin;
-    private final List<Material> plantableSeeds = Arrays.asList(Material.WHEAT_SEEDS, Material.BEETROOT_SEEDS, Material.CARROT, Material.POTATO, Material.NETHER_WART, Material.MELON_SEEDS, Material.PUMPKIN_SEEDS);
+    private final List<Material> plantableSeeds = Arrays.asList(
+            Material.WHEAT_SEEDS, Material.BEETROOT_SEEDS,
+            Material.CARROT, Material.POTATO, Material.NETHER_WART,
+            Material.MELON_SEEDS, Material.PUMPKIN_SEEDS
+    );
     private final Map<String, Material> seedSynonyms = new HashMap<>();
 
     /**
@@ -65,12 +69,10 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
      */
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
-        if (sender instanceof ConsoleCommandSender) {
+        if (!(sender instanceof Player player)) {
             sender.sendMessage("This command can only be run by a player.");
             return true;
         }
-
-        Player player = (Player) sender;
 
         if (args.length != 1) {
             player.sendMessage("Usage: /getseedbag <seedtype>");
@@ -85,7 +87,7 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
             return false;
         }
 
-        if (!isPlantableItem(seedMaterial)) {
+        if (!plantableSeeds.contains(seedMaterial)) {
             player.sendMessage("Invalid seed type.");
             return false;
         }
@@ -97,16 +99,6 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
     }
 
     /**
-     * Check if the given material is a plantable seed.
-     *
-     * @param material The material to check.
-     * @return True if the material is a plantable seed, false otherwise.
-     */
-    private boolean isPlantableItem(Material material) {
-        return plantableSeeds.contains(material);
-    }
-
-    /**
      * Create a seed bag item with the specified seed material.
      *
      * @param seedMaterial The seed material for the seed bag.
@@ -115,19 +107,18 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
     private ItemStack createSeedBag(Material seedMaterial) {
         ItemStack seedBag = new ItemStack(Material.PAPER);
         ItemMeta meta = seedBag.getItemMeta();
-        PersistentDataContainer data = meta.getPersistentDataContainer();
+        if (meta == null) {
+            return seedBag;
+        }
 
-        NamespacedKey seedTypeKey = new NamespacedKey(plugin, "seed_type");
-        data.set(seedTypeKey, PersistentDataType.STRING, seedMaterial.toString());
-
-        NamespacedKey countKey = new NamespacedKey(plugin, "seed_count");
-        data.set(countKey, PersistentDataType.INTEGER, 0);
+        meta.getPersistentDataContainer().set(SeedBags.SEED_TYPE_KEY, PersistentDataType.STRING, seedMaterial.toString());
+        meta.getPersistentDataContainer().set(SeedBags.SEED_COUNT_KEY, PersistentDataType.INTEGER, 0);
 
         meta.setCustomModelData(getCustomModelDataForSeed(seedMaterial));
-
-        meta.displayName(Component.text(getSeedBagDisplayName(meta)));
         meta.setMaxStackSize(1);
         seedBag.setItemMeta(meta);
+
+        SeedBagUtil.updateSeedBagMeta(seedBag);
 
         return seedBag;
     }

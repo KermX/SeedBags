@@ -2,6 +2,7 @@ package me.kermx.seedBags;
 
 import dev.rosewood.rosestacker.api.RoseStackerAPI;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
@@ -14,6 +15,11 @@ import java.util.Objects;
 public final class SeedBags extends JavaPlugin {
     private RoseStackerAPI rsAPI;
 
+    private static SeedBags instance;
+    public static NamespacedKey SEED_TYPE_KEY;
+    public static NamespacedKey SEED_COUNT_KEY;
+
+
     /**
      * Called when the plugin is enabled.
      * Sets the command executor for the /getseedbag command and
@@ -21,6 +27,11 @@ public final class SeedBags extends JavaPlugin {
      */
     @Override
     public void onEnable() {
+        instance = this;
+        SEED_TYPE_KEY = new NamespacedKey(this, "seed_type");
+        SEED_COUNT_KEY = new NamespacedKey(this, "seed_count");
+
+
         // Set the executor for the /getseedbag command
         Objects.requireNonNull(getCommand("getseedbag")).setExecutor(new SeedBagCommandExecutor(this));
 
@@ -31,5 +42,9 @@ public final class SeedBags extends JavaPlugin {
 
         // Register the event listener for seed bags
         getServer().getPluginManager().registerEvents(new SeedBagListener(this, this.rsAPI), this);
+    }
+
+    public static SeedBags getInstance() {
+        return instance;
     }
 }
