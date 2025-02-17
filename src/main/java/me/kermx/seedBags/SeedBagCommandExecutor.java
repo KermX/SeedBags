@@ -123,11 +123,32 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
         NamespacedKey countKey = new NamespacedKey(plugin, "seed_count");
         data.set(countKey, PersistentDataType.INTEGER, 0);
 
+        meta.setCustomModelData(getCustomModelDataForSeed(seedMaterial));
+
         meta.displayName(Component.text(getSeedBagDisplayName(meta)));
         meta.setMaxStackSize(1);
         seedBag.setItemMeta(meta);
 
         return seedBag;
+    }
+
+    /**
+     * Map each seed material to its unique custom model data value.
+     *
+     * @param seedMaterial The seed material.
+     * @return The custom model data value.
+     */
+    private int getCustomModelDataForSeed(Material seedMaterial) {
+        return switch (seedMaterial) {
+            case WHEAT_SEEDS -> 900;
+            case BEETROOT_SEEDS -> 904;
+            case CARROT -> 903;
+            case POTATO -> 901;
+            case NETHER_WART -> 902;
+            case MELON_SEEDS -> 899;
+            case PUMPKIN_SEEDS -> 898;
+            default -> 0;
+        };
     }
 
     /**
