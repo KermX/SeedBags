@@ -39,9 +39,9 @@ public class SeedBagUtil {
         meta.displayName(MINI_MESSAGE.deserialize(displayName));
 
         List<Component> lore = new ArrayList<>();
+        lore.add(MINI_MESSAGE.deserialize("<gray><italic:false>Plants crops in a 5x5 area."));
         lore.add(Component.text(" "));
         lore.add(MINI_MESSAGE.deserialize("<gray><italic:false>" + seedCount + "/128,000 "));
-        lore.add(MINI_MESSAGE.deserialize("<gray><italic:false>Plants crops in a 5x5 area."));
         meta.lore(lore);
 
         seedBag.setItemMeta(meta);
