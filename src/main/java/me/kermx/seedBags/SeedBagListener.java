@@ -228,7 +228,7 @@ public class SeedBagListener implements Listener {
         }
 
         Material seedMaterial = Material.valueOf(seedTypeString);
-        int radius = (seedTypeString.equals("PUMPKIN_SEEDS") || seedTypeString.equals("MELON_SEEDS")) ? 0 : 2;
+        int radius = 2; //(seedTypeString.equals("PUMPKIN_SEEDS") || seedTypeString.equals("MELON_SEEDS")) ? 0 : 2;
         int seedsPlanted = 0;
 
         outer:
