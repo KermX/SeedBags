@@ -6,4 +6,5 @@ softdepend: [RoseStacker]
 commands:
   getseedbag:
     description: Gives a seed bag
+    permission: seedbags.getseedbag
     usage: /getseedbag <seedtype>

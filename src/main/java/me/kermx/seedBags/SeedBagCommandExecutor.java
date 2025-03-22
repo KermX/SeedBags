@@ -74,6 +74,10 @@ public class SeedBagCommandExecutor implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if (!player.hasPermission("seedbags.getseedbag")) {
+            return false;
+        }
+
         if (args.length != 1) {
             player.sendMessage("Usage: /getseedbag <seedtype>");
             return false;
